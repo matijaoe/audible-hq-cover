@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Audible HQ Cover
 // @namespace    https://greasyfork.org/en/users/1370205
-// @version      0.1.0
+// @version      0.2.0
 // @description  Replace the default audible cover with a HQ version, with 'Open' and 'Download' actions
 // @license      MIT
 // @match        https://*.audible.*/pd/*
@@ -88,39 +88,6 @@ function extractParams() {
 	return { region, asin }
 }
 
-function iconifyIcon(name) {
-	return `https://api.iconify.design/solar:${name}.svg`
-}
-
-function createButton(iconUrl, iconText, action, tooltip) {
-	const btn = previewBtn.cloneNode(true)
-	btn.removeAttribute('id')
-	btn.setAttribute('aria-label', tooltip)
-	btn.removeAttribute('data-asin')
-	btn.removeAttribute('data-is-sample')
-
-	const iconImg = document.createElement('img')
-	iconImg.src = iconUrl
-	iconImg.alt = ''
-	iconImg.style.marginRight = '4px'
-	iconImg.style.width = '16px'
-	iconImg.style.height = '16px'
-
-	btn.textContent = ''
-
-	btn.appendChild(iconImg)
-	btn.appendChild(document.createTextNode(iconText))
-
-	btn.title = tooltip
-
-	btn.addEventListener('click', (e) => {
-		e.preventDefault()
-		action()
-	})
-
-	return btn
-}
-
 function downloadImage(imageUrl, fileName) {
 	fetch(imageUrl)
 		.then((response) => response.blob())
@@ -138,82 +105,81 @@ function downloadImage(imageUrl, fileName) {
 		.catch((error) => console.error('Error downloading image:', error))
 }
 
-function replaceCoverUrl(coverUrl) {
+function createActionButton(iconUrl, title, onClick) {
+	const button = document.createElement('button')
+	button.title = title
+	button.setAttribute('data-hidden', 'true')
+
+	const icon = document.createElement('img')
+	icon.src = iconUrl
+	icon.alt = title
+
+	button.appendChild(icon)
+	button.addEventListener('click', (e) => {
+		e.stopPropagation()
+		e.preventDefault()
+		onClick()
+	})
+
+	return button
+}
+
+function wrapCoverWithLink(imageElement, coverUrl) {
+	const linkElement = document.createElement('a')
+	linkElement.href = coverUrl
+	linkElement.className = 'cover-link'
+	linkElement.title = 'Open cover'
+	imageElement.parentNode.insertBefore(linkElement, imageElement)
+	linkElement.appendChild(imageElement)
+}
+
+function enhanceCoverImage(coverUrl, asin) {
 	const imageElement = document.querySelector('div.bc-col-12 img.bc-pub-block')
 
 	if (imageElement) {
-		imageElement.src = coverUrl
-		imageElement.draggable = true
-		console.log('🖼️ Replaced cover image', coverUrl)
+		const containerElement = document.createElement('div')
+		containerElement.className = 'container'
+
+		imageElement.parentNode.insertBefore(containerElement, imageElement)
+		containerElement.appendChild(imageElement)
+
+		wrapCoverWithLink(imageElement, coverUrl)
+
+		const coverActionsContainer = document.createElement('div')
+		coverActionsContainer.className = 'cover-actions-container'
+
+		const hqButton = createActionButton(
+			'https://api.iconify.design/solar:high-quality-bold.svg',
+			'Load HQ cover',
+			() => {
+				imageElement.src = coverUrl
+				hqButton.classList.add('action-btn-disabled')
+				hqButton.title = 'HQ cover loaded'
+			}
+		)
+
+		const downloadButton = createActionButton(
+			'https://api.iconify.design/solar:download-square-bold.svg',
+			'Download cover',
+			() => downloadImage(coverUrl, `${asin}.jpg`)
+		)
+
+		coverActionsContainer.appendChild(hqButton)
+		coverActionsContainer.appendChild(downloadButton)
+
+		containerElement.appendChild(coverActionsContainer)
+
+		containerElement.addEventListener('mouseenter', () => {
+			downloadButton.setAttribute('data-hidden', false)
+			hqButton.setAttribute('data-hidden', false)
+		})
+		containerElement.addEventListener('mouseleave', () => {
+			downloadButton.setAttribute('data-hidden', true)
+			hqButton.setAttribute('data-hidden', true)
+		})
 	} else {
 		console.warn('Cover image element not found.')
 	}
-}
-
-const injectCoverButtons = (coverUrl, asin) => {
-	const previewBtn = document.querySelector('adbl-button[slot="sample-button"]')
-	if (!previewBtn) {
-		console.error('Preview button not found')
-		return
-	}
-
-	const btnContainer = document.createElement('div')
-	btnContainer.style.cssText = `
-		display: flex;
-		gap: 5px;
-		margin-top: 10px;
-	`
-
-	const createButton = (iconUrl, iconText, action, tooltip) => {
-		const btn = previewBtn.cloneNode(true)
-		btn.removeAttribute('id')
-		btn.setAttribute('aria-label', tooltip)
-		btn.removeAttribute('data-asin')
-		btn.removeAttribute('data-is-sample')
-
-		const iconImg = document.createElement('img')
-		iconImg.src = iconUrl
-		iconImg.alt = ''
-		iconImg.style.marginRight = '4px'
-		iconImg.style.width = '16px'
-		iconImg.style.height = '16px'
-
-		btn.style.flex = '1'
-
-		btn.textContent = ''
-		btn.appendChild(iconImg)
-		btn.appendChild(document.createTextNode(iconText))
-
-		btn.title = tooltip
-
-		btn.addEventListener('click', (e) => {
-			e.preventDefault()
-			action()
-		})
-
-		return btn
-	}
-
-	const openBtn = createButton(
-		iconifyIcon('gallery-minimalistic-bold'),
-		'Open',
-		() => window.open(coverUrl, '_blank'),
-		'Open cover'
-	)
-
-	const downloadBtn = createButton(
-		iconifyIcon('download-square-bold'),
-		'Download',
-		() => {
-			downloadImage(coverUrl, `${asin}.jpg`)
-		},
-		'Download cover'
-	)
-
-	btnContainer.appendChild(openBtn)
-	btnContainer.appendChild(downloadBtn)
-
-	previewBtn.parentNode.insertBefore(btnContainer, previewBtn.nextSibling)
 }
 
 const COVER_SIZE = 2400
@@ -228,17 +194,63 @@ const main = async () => {
 
 		const images = await fetchAudibleProductImages(region, asin)
 
-		if (!images || !images[2400]) {
-			throw new Error('No 2400px image found')
+		if (!images || !images[COVER_SIZE]) {
+			throw new Error('No images found')
 		}
 
-		const cover = images[2400]
+		const cover = images[COVER_SIZE]
 
-		injectCoverButtons(cover, asin)
-		replaceCoverUrl(cover)
+		enhanceCoverImage(cover, asin)
+		addStyles()
 	} catch (error) {
 		console.error('Error in main function:', error.message)
 	}
 }
 
 main()
+
+function addStyles() {
+	const style = document.createElement('style')
+	style.textContent = `
+		.cover-actions-container {
+			position: absolute;
+			bottom: 10px;
+			right: 10px;
+			display: flex;
+			gap: 6px;
+		}
+		.cover-actions-container button {
+			background-color: rgba(0, 0, 0, 0.85);
+			border: none;
+			border-radius: 12px;
+			padding: 6px;	
+			cursor: pointer;
+			transition: opacity 200ms ease-in-out;
+		}
+		.cover-actions-container button img {
+			width: 20px;
+			height: 20px;
+			filter: invert(1);
+			display: block;
+		}
+		.cover-actions-container .action-btn-disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+		.container {
+			position: relative;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		[data-hidden="true"] {
+			opacity: 0;
+			visibility: hidden;
+		}
+		[data-hidden="false"] {
+			opacity: 1;
+			visibility: visible;
+		}
+	`
+	document.head.appendChild(style)
+}
