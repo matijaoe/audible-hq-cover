@@ -134,7 +134,9 @@ function wrapCoverWithLink(imageElement, coverUrl) {
 }
 
 function enhanceCoverImage(coverUrl, asin) {
-	const imageElement = document.querySelector('div.bc-col-12 img.bc-pub-block')
+	const imageElement = document.querySelector(
+		'img.bc-pub-block.bc-image-inset-border.js-only-element'
+	)
 
 	if (imageElement) {
 		const containerElement = document.createElement('div')
