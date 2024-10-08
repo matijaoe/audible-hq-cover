@@ -1,0 +1,12 @@
+{
+  "version": "0.1.0",
+  "name": "audible-hq-cover",
+  "module": "index.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
