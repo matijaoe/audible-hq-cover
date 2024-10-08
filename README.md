@@ -1,15 +1,3 @@
-# audible-hq-cover
+# Audible HQ Cover
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.js
-```
-
-This project was created using `bun init` in bun v1.1.12. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Userscript for getting that sweet HQ version of the audible book cover 😙👌🏻
