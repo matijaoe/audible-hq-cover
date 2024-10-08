@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Audible HQ Cover
 // @namespace    https://greasyfork.org/en/users/1370205
-// @version      0.2.0
+// @version      0.2.1
 // @description  Replace the default audible cover with a HQ version, with 'Open' and 'Download' actions
 // @license      MIT
 // @match        https://*.audible.*/pd/*
