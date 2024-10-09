@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Audible HQ Cover
 // @namespace    https://greasyfork.org/en/users/1370205
-// @version      0.2.2
-// @description  Replace the default audible cover with a HQ version, with 'Open' and 'Download' actions
+// @version      0.2.3
+// @description  Full-res cover images on Audible, with 'open' and 'download' actions.
 // @license      MIT
 // @match        https://*.audible.*/pd/*
 // @match        https://*.audible.*/ac/*
@@ -18,6 +18,8 @@ const MARKETPLACE = {
 	es: { tld: 'es', flag: '🇪🇸', name: 'Spain' },
 	it: { tld: 'it', flag: '🇮🇹', name: 'Italy' },
 	in: { tld: 'in', flag: '🇮🇳', name: 'India' },
+	jp: { tld: 'co.jp', flag: '🇯🇵', name: 'Japan' },
+	br: { tld: 'com.br', flag: '🇧🇷', name: 'Brazil' },
 }
 
 function extractRegionFromUrl(url) {
