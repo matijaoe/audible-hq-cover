@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Audible HQ Cover
 // @namespace    https://greasyfork.org/en/users/1370205
-// @version      0.2.1
+// @version      0.2.2
 // @description  Replace the default audible cover with a HQ version, with 'Open' and 'Download' actions
 // @license      MIT
 // @match        https://*.audible.*/pd/*
@@ -129,6 +129,7 @@ function wrapCoverWithLink(imageElement, coverUrl) {
 	linkElement.href = coverUrl
 	linkElement.className = 'cover-link'
 	linkElement.title = 'Open cover'
+	linkElement.target = '_blank'
 	imageElement.parentNode.insertBefore(linkElement, imageElement)
 	linkElement.appendChild(imageElement)
 }
